@@ -1,0 +1,111 @@
+- Pregunta 1
+
+SELECT title, first_name, last_name, date_of_birth
+FROM Customer;
+
+- Pregunta 2
+
+SELECT customer_group, COUNT(*) AS number_of_customers
+FROM Customer
+GROUP BY customer_group;
+
+- Pregunta 3
+
+SELECT c.*, a.currency_code
+FROM Customer c
+JOIN Account a ON c.customer_id = a.customer_id;
+
+- Pregunta 4
+
+SELECT p.product_name, b.bet_date, SUM(b.bet_amt) AS total_bet_amt
+FROM Betting b
+JOIN Product p ON b.product_id = p.product_id
+GROUP BY p.product_name, b.bet_date;
+
+- Pregunta 5
+
+SELECT p.product_name, b.bet_date, SUM(b.bet_amt) AS total_bet_amt
+FROM Betting b
+JOIN Product p ON b.product_id = p.product_id
+WHERE b.bet_date >= '2023-11-01' AND p.product_category = 'Sportsbook'
+GROUP BY p.product_name, b.bet_date;
+
+- Pregunta 6
+
+SELECT p.product_name, a.currency_code, c.customer_group, SUM(b.bet_amt) AS total_bet_amt
+FROM Betting b
+JOIN Product p ON b.product_id = p.product_id
+JOIN Account a ON b.account_id = a.account_id
+JOIN Customer c ON a.customer_id = c.customer_id
+WHERE b.bet_date > '2023-12-01'
+GROUP BY p.product_name, a.currency_code, c.customer_group;
+
+- Pregunta 7
+
+SELECT c.title, c.first_name, c.last_name, SUM(b.bet_amt) AS total_bet_amt
+FROM Customer c
+LEFT JOIN Account a ON c.customer_id = a.customer_id
+LEFT JOIN Betting b ON a.account_id = b.account_id AND b.bet_date BETWEEN '2023-11-01' AND '2023-11-30'
+GROUP BY c.title, c.first_name, c.last_name;
+
+- Pregunta 8
+
+SELECT b.customer_id, COUNT(DISTINCT b.product_id) AS number_of_products
+FROM Betting b
+GROUP BY b.customer_id;
+
+SELECT DISTINCT b1.customer_id
+FROM Betting b1
+JOIN Betting b2 ON b1.customer_id = b2.customer_id
+WHERE b1.product_id IN (SELECT product_id FROM Product WHERE product_category = 'Sportsbook')
+  AND b2.product_id IN (SELECT product_id FROM Product WHERE product_category = 'Vegas');
+
+- Pregunta 9
+
+SELECT c.customer_id, c.first_name, c.last_name, 
+       SUM(CASE WHEN p.product_category = 'Sportsbook' THEN b.bet_amt ELSE 0 END) AS sportsbook_bet_amt,
+       SUM(CASE WHEN p.product_category = 'Vegas' THEN b.bet_amt ELSE 0 END) AS vegas_bet_amt
+FROM Customer c
+JOIN Account a ON c.customer_id = a.customer_id
+JOIN Betting b ON a.account_id = b.account_id
+JOIN Product p ON b.product_id = p.product_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+HAVING sportsbook_bet_amt > 0 AND vegas_bet_amt = 0;
+
+- Pregunta 10
+
+WITH Bet_Summary AS (
+    SELECT b.customer_id, p.product_name, SUM(b.bet_amt) AS total_bet_amt,
+           ROW_NUMBER() OVER (PARTITION BY b.customer_id ORDER BY SUM(b.bet_amt) DESC) AS rn
+    FROM Betting b
+    JOIN Product p ON b.product_id = p.product_id
+    GROUP BY b.customer_id, p.product_name
+)
+SELECT customer_id, product_name
+FROM Bet_Summary
+WHERE rn = 1;
+
+- Pregunta 11
+
+SELECT student_name, gpa
+FROM Student
+ORDER BY gpa DESC
+LIMIT 5;
+
+- Pregunta 12
+
+SELECT s.school_name, COUNT(st.student_id) AS number_of_students
+FROM School s
+LEFT JOIN Student st ON s.school_id = st.school_id
+GROUP BY s.school_name;
+
+- Pregunta 13
+
+WITH Top_Students AS (
+    SELECT student_name, gpa, school_id,
+           ROW_NUMBER() OVER (PARTITION BY school_id ORDER BY gpa DESC) AS rn
+    FROM Student
+)
+SELECT student_name, gpa, school_id
+FROM Top_Students
+WHERE rn <= 3;
